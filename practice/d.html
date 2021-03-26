@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ko" class="">
+  <head>
+    <meta charset="UTF-8">
+    <title>CodePen Demo</title>
+  </head>
+  <script>
+
+    function answerShuffle(){
+                var answerArry=new Array( true, false, false, false, false);
+                var choicesAnswer =document.getElementsByClassName("CHOICES");
+                console.log(choicesAnswer[0]);
+                conslof.log(answerArry);
+                
+            }
+  </script>
+  <body>
+    <div>
+      <table id="PASSAGE" class="PASSAGE">
+          <tr>
+              <td>
+                  Rapidly 은(는) 형용사이다. 형용사는 'ㄴ, ~의'로 해석이 되는 단어이며, [       ]를 수식한다.
+              </td>
+          </tr>
+      </table>
+
+      <table data-animation="ripple" id="choices-1" class="CHOICES" onClick="answerShuffle()">
+          <tr>
+              <td>
+                  ① 명사구
+              </td>
+          </tr>
+      </table>
+
+      <table  data-animation="ripple" id="choices-2" class="CHOICES" onClick="clickChoices('choices', '2')">
+          <tr>
+              <td>
+                  ② 전치사구
+              </td>
+          </tr>
+      </table>
+      <table data-animation="ripple" id="choices-3" class="CHOICES" onClick="clickChoices('choices', '3')">
+          <tr>
+              <td>
+                  ③ 형용사구
+              </td>
+          </tr> 
+      </table>
+      <table data-animation="ripple" id="choices-4" class="CHOICES" onClick="clickChoices('choices', '4')">
+          <tr>
+              <td>
+                  ④ 부사구
+              </td>
+          </tr>
+      </table>
+      <table data-animation="ripple" id="choices-5" class="CHOICES" onClick="clickChoices('choices', '5')">
+          <tr>
+              <td>
+                  ⑤ 전명구
+              </td>
+          </tr>
+      </table>
+      <table data-animation="ripple"id="choices-0" class="CHOICES" onClick="clickChoices('choices', '0')">
+          <tr>
+              <td>
+                  ✖ 잘 모르겠음
+              </td>
+          </tr>
+      </table>
+
+  </div>
+  </body>
+  </html>

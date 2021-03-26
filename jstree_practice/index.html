@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>JStree</title>
+</head> 
+<script src="./index.js"></script>
+<!--jstree사용시 추가해야 할 것-->
+<!--include jQuery-->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.12.1/jquery.min.js"></script>
+<!--include jstree theme-->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/themes/default/style.min.css" /> 
+<!--include jstree-->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/jstree.min.js"></script>
+<body>
+    <input type="text" id="plugins4_q" value="" class="input" style="margin:0em auto 1em auto; display:block; padding:4px; border-radius:4px; border:1px solid silver;">  
+    <div id="tree1">
+        <!-- in this example the tree is populated from inline HTML -->
+        <ul>
+          <li>Root node 1
+            <ul>
+              <li id="child_node_1">Child node 1</li>
+              <li>Child node 2</li>
+            </ul>
+          </li>
+          <li>Root node 2
+            <ul>
+              <li id="branch_1">Child node 1</li>
+              <li>Child node 2</li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+      <button>demo button</button>
+</body>
+<script>
+$(function(){
+
+  var a=$("#tree1").jstree({
+    'core' : {
+		'strings' : {
+      'data' : [
+			'Simple root node',
+			{
+				'id' : 'node_2',
+				'text' : 'Root node with options',
+				'state' : { 'opened' : true, 'selected' : true },
+				'children' : [ { 'text' : 'Child 1' }, 'Child 2']
+			}
+		]
+		}
+  },
+    "plugins" : [ "search" ]
+  });
+
+  $('#plugins4_q').keyup(function () {
+    to = setTimeout(function () {
+      var v = $('#plugins4_q').val();
+      console.log(v);
+      $('#jstree').jstree(true).search(v);
+    }, 250);
+  });
+
+  $('#jstree').on("changed.jstree", function (e, data) {
+      console.log(data.selected);
+      });
+});
+ 
+   
+
+// 8 interact with the tree - either way is OK
+// $('button').on('click', function () {
+// $('#jstree').jstree(true).select_node('child_node_1');
+// $('#jstree').jstree('select_node', 'child_node_1');
+// $.jstree.reference('#jstree').select_node('child_node_1');
+// });
+        
+    // });
+</script>
+</html>
