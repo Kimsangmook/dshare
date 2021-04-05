@@ -20,14 +20,17 @@ int main(){
     node2->next=head->next;
     head->next = node2;
 
-    NODE head1;
-    head1.next=NULL;
-    
-    NODE node3;
-    node3.data=30;
-    node3.next=head1.next;
-    head->next=&node3;
-    
+
+    NODE* curr = head -> next;
+    while (curr != NULL){
+        printf("%d\n",curr->data);
+        curr = curr -> next;
+    }
+
+    free(head);
+    free(node1);
+    free(node2);
+   
 
 
 }
