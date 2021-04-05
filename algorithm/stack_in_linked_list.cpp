@@ -20,9 +20,9 @@ int isEmpty() {
 void push(char data){
     LinkedList_Stack* newnode = (LinkedList_Stack*)malloc(sizeof(LinkedList_Stack));
 
-    newnode->data=data;
-    newnode->link=top;
-    top=newnode;
+    newnode->data=data; // 새로운 노드의 데이터에 값을 저장
+    newnode->link=top; //현재 탑을 연결
+    top=newnode; // 탑을 변경
 }
 
 char pop(){
