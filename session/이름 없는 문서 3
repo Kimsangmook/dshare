@@ -1,0 +1,13 @@
+<?php
+#문제 세션 관리
+include '../common/mcp_session.php';
+include '../common/clog.php';
+
+$log = new clog("[db_session_problem.php]");
+
+
+$_SESSION['choice'] = $_POST['choice'];
+$log->log($_POST['choice']);
+
+
+?>

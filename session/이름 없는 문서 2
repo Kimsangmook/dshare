@@ -1,0 +1,805 @@
+<?php
+    /**
+    * 프로젝트명 : MCP BuildUp
+    * 파일명 : problem.php
+    * 작성자 : 
+    * 수정일 : 2021. 03. 23
+    * Description : mcp_main.php 에서 받아온 데이터로 문제 호출하는 파일
+    */ 
+
+    include '../common/mcp_session.php';
+    include '../common/server.php';
+    include '../common/problem_data.php';
+    include '../common/clog.php';
+
+    // $log = new clog("[problem.php]");
+    $log->__set("name","[problem.php]");
+
+    $varmook = $_SESSION['choice'];
+
+    // mcp_main에서 보낸 schedule_order와 problems 가져오기
+    $varSorder = $_GET['sorder'];
+    $varProblemData = $_GET["problemdata"]; 
+    $varIdData = $_GET['iddata'];
+    $varArrTemp = json_decode($varProblemData,true);
+    $sentenceIndex = 0;
+    $problemIndex = 0;
+    $varMemberID = $_GET["member_id"];
+    $varRounds = $_GET["rounds"] + 1;
+    $varNumber = 0;
+    $varTotalSize = 0;
+    $varScore = 0; 
+
+    foreach($varArrTemp as $key => $value) {                
+        $varArrTemp[$key] = explode(",", $value);
+        $varTotalSize += count($varArrTemp[$key]);
+    }
+
+    //문제집 진행해야할 문장, 문제 정보를 담고있는 배열 보기(주석)
+    // var_dump($varArrTemp);
+  
+    $sqlIndex  = "SELECT max(no) as no, count(problem_id) AS problem_index, (@ROWNUM := @ROWNUM + 1) - 1 AS sentence_index , ";
+    $sqlIndex .= "(SELECT count(no) FROM SyntaxAnswers WHERE member_id='" . $varMemberID . "' AND schedule_order= " . $varSorder . " AND rounds= " . $varRounds . ") as number , ";
+    $sqlIndex .= "(SELECT SUM((4-choice_result) * 100) FROM SyntaxAnswers WHERE member_id='" . $varMemberID . "' AND schedule_order= " . $varSorder . " AND rounds= " . $varRounds . " AND choice_result > 0) as score ";
+    $sqlIndex .= "FROM SyntaxAnswers, (SELECT @ROWNUM := 0) R ";
+    $sqlIndex .= "WHERE member_id='" . $varMemberID . "' AND schedule_order= " . $varSorder . " AND rounds= " . $varRounds;
+    $sqlIndex .= " GROUP BY sentence_id ORDER BY no DESC LIMIT 1 ";
+
+    $log->log($sqlIndex);
+    $resultIndex = mysqli_query($conn,$sqlIndex);
+    if(mysqli_num_rows($resultIndex) > 0) {
+        while($row = mysqli_fetch_assoc($resultIndex)) {
+            $problemIndex = $row["problem_index"];
+            $sentenceIndex = $row["sentence_index"];
+            $varNumber = $row["number"];
+            $varScore = $row["score"];
+        }
+    }
+    $log->log("### sentenceIndex : " . $sentenceIndex);
+    $log->log("### problemIndex : " . $problemIndex);
+    $log->log("### varNumber : " . $varNumber);
+    $log->log("### 총문제 : " . $varTotalSize);
+
+    //problem_index 가 sentence_index 의 problem size와 값이 같다면 각각의 index값을 조절해줘야함(문장은 다음문장으로, 문제는 해당 문장의 첫번째 문제)
+    $tempkeys = array_keys($varArrTemp)[$sentenceIndex];
+    if(count($varArrTemp[$tempkeys]) == $problemIndex) {
+        $sentenceIndex += 1;
+        $problemIndex = 0;
+    }
+ 
+    //ProblemData 초기화
+    if($varProblemData != 1){
+        $problemdata = new Problemdata();
+        
+        $problemdata->setSentenceIndex($sentenceIndex);
+        $problemdata->setProblemIndex($problemIndex);
+        $problemdata->setArrProblemData($varArrTemp);
+        
+        $_SESSION['problemdata'] = serialize($problemdata);
+        $log->log("첫페이지로 실행" . $varProblemData);
+    } else if (isset($_SESSION['problemdata']) && !empty($_SESSION['problemdata'])) {
+        $problemdata = unserialize($_SESSION['problemdata']);
+        $sentenceIndex = $problemdata->getSentenceIndex();
+        $problemIndex = $problemdata->getProblemIndex();
+
+        $log->log("세션에서 데이터 가져와서 실행");
+    } else {
+        alert("데이터를 불러올 수 없습니다. 처음부터 다시 시작하세요.");
+    }
+     
+     // $score = 10;
+ 
+    $log->log("problemData : " . $varProblemData);
+    $log->log("memberID : " . $varMemberID);
+    $log->log("sentenceIndex : " . $sentenceIndex);
+    $log->log("problemIndex : " . $problemIndex);
+     
+?>
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Problem TEST</title>
+        <style>
+            @font-face {
+            font-family: 'D-DIN-Condensed';
+                src:  url('D-DIN-Condensed.ttf.woff') format('woff'),
+                url('D-DIN-Condensed.ttf.svg#D-DIN-Condensed') format('svg'),
+                url('D-DIN-Condensed.ttf.eot'),
+                url('D-DIN-Condensed.eot?#iefix') format('embedded-opentype');
+                font-weight: normal;
+                font-style: normal;
+            }
+        </style>
+        <link rel="stylesheet" href="../css/problem_style.css">
+        <link rel="stylesheet" href="../css/syntax_style.css">
+    </head>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@100;500;700;900&display=swap" rel="stylesheet">
+    <script src="../js/engine.js"></script>
+    <script src="../js/clock.js"></script>
+    <script type="text/javascript">
+
+        // mcp_main 에서 가져온 schedule_order에 해당되는 문장의 2D 배열로 저장되있는 문제들 problems 변수에 저장
+        let problems = <?php echo $varProblemData;?>;
+        let problemNodeIDs = <?php echo $varIdData;?>;
+        console.log("problems : " + problems);
+        console.log("problemNodeIDs : " + problemNodeIDs);
+
+        // 첫번째 문장에 해당된 문제를 불러오기 위한 2D 배열의 첫번째 인덱스의 값
+        let sentenceIndex = <?php echo $sentenceIndex; ?>;
+        console.log("sentenceIndex : " + sentenceIndex);
+
+        // 첫번째 인덱스에 해당하는 값의 string을 , 구분자로 split 한 뒤 저장될 문제들의 변수를 배열로 지정
+        let sentenceArray;
+        let sentenceNodeIDArray;
+
+        // split 된 문제들의 배열을 지정하는 두번째 인덱스 값
+        let problemIndex = <?php echo $problemIndex; ?>;
+        console.log("problemIndex : " + problemIndex);
+
+        // json형태로 들어온 problems의 key값을 keys 변수에 저장
+        let keys = Object.keys(problems);
+        console.log("keys : " + keys);
+
+        // json형태로 들어온 problems의 value 값을 values 변수에 저장
+        let values = Object.values(problems);
+        let idValues = Object.values(problemNodeIDs);
+        console.log("values : " + values);
+        console.log("idValues : " + idValues);
+
+        
+        // 문제의 정답 값
+        let problemAnswer;
+
+        // 잘 모르겠습니다 혹은 3개 다 틀렸을 시 정답이 저장되는지에 대한 boolean 값
+        let noInsert = false;
+
+        //배열관리
+
+        <?php
+            if($varmook === ""){                
+        ?>
+        let choiceNo = new Array();
+        <?php
+            } else {
+        ?>
+        let choiceNo = <?php echo json_encode($varmook) ?>;
+
+        <?php
+            }        
+        ?>
+
+
+        // 문제를 틀렸을 때 문제 틀린 개수를 기록하는 변수
+        let wrongCount = choiceNo.length;
+
+
+
+        let newScore = 0;
+        let rounds = <?php echo $varRounds; ?>;
+
+        $(document).ready(() => {
+            getSentence(sentenceIndex);
+            $('#questionNumber').html(<?php echo $varNumber; ?>); //문제번호 초기화
+            $('#questionSize').html("총 문제: " + <?php echo $varTotalSize; ?>); // 총 문제크기 초기화
+            $('#score').html('MQ: ' + <?php echo $varScore; ?>); // 누적점수 초기화
+            timeStart(); //시간 시작
+        })
+
+
+        control_f5_issue_in_session=()=>{
+            if(choiceNo){
+                for( var i=0 ; i < choiceNo.length; i++){
+                console.log('#choices-' + choiceNo[i]);
+                console.log(typeof '#choices-' + choiceNo[i]);
+                var moook=document.getElementById('choices-1');
+                console.log(moook);
+
+                $('#choices-' + choiceNo[i]).addClass("WRONG_CHOICES");
+                $('#choices-' + choiceNo[i]).removeClass("CHOICES");
+                }
+            }
+            var life = document.getElementsByClassName('WRONG_CHOICES');
+            for( var i = 0 ; i <= life.length; i++ ){
+             healthbar(i);
+            }
+        }
+        // sentenceIndex가 변할때 마다 호출, parameter 값의 문제들을 , 구분자로 split 하고 problemIndex에 해당되는 문제를 result에 load
+        // 문제가 load되면 showSentence 함수를 호출해 문제가 해당되있는 sentence load
+        getSentence = (index) => {
+            
+            sentenceArray = values[index].split(',');
+
+            for(var i=0 ; i < sentenceArray.length ; i++){
+                console.log("sentenceArray : " + sentenceArray[i]);
+            }
+
+            // problemIndex = 0;
+            console.log('* sentenceIndex : ' + index);
+            console.log('* problemIndex : ' + problemIndex);
+            console.log('* problemNo : ' + sentenceArray[problemIndex]);
+            $.ajax({
+                url: "../db/db_problem.php",
+                type: "get",
+                data: {
+                    "no": sentenceArray[problemIndex]
+                }
+            })
+            .done(function (data) {                         
+                $('#result').html(data);
+                myResize();
+                resetObj();
+                control_f5_issue_in_session();
+            });
+            showSentence(index);
+        }
+
+        // 다음 문제로 넘어가는 함수
+        // sentenceIndex가 마지막 인덱스이고 problemIndex가 마지막 인덱스 일 경우는 문제를 다 풀었을 때이기때문에 result page로 이동
+        // 오직 problemIndex가 마지막 인덱스 일 경우에는 다음 sentence로 이동하기 위해 sentenceIndex에 1을 더해주고 getSentence 호출
+        // 둘 다 아닐 경우 다음 문제를 다시 result에 로드
+        // wrongCount 변수를 0으로 초기화
+        getNextProblem = () => {
+            timeStart(); //시간 시작
+            wrongCount = 0;
+            noInsert = false;
+            choiceNo.length = 0;
+            if((sentenceArray.length == problemIndex) && (sentenceIndex == (keys.length - 1))) {
+            // if(true) {
+                console.log('* * sentenceIndex : ' + sentenceIndex);
+                console.log('* * problemIndex : ' + problemIndex);
+                console.log('* * problemNo : ' + sentenceArray[problemIndex]);
+
+                $.ajax({
+                url: "../db/db_score.php",
+                type: "post",
+                data: {
+                    "member_id": "<?php echo $varMemberID; ?>",
+                    "schedule_order": <?php echo $varSorder; ?>,                    
+                    "score": newScore,
+                    "duration": 100,
+                    "rounds": rounds
+                    }
+                })
+                .done(function (data) {                         
+                });
+
+                location.href = "mcp_result.php?schedule_order=" + <?php echo $varSorder; ?> + "&member_id=" + '<?php echo $varMemberID; ?>' + "&score=" + newScore + "&rounds=" + rounds;
+            }
+            else if(sentenceArray.length == problemIndex) {
+                console.log('** sentenceIndex : ' + sentenceIndex);
+                console.log('** problemIndex : ' + problemIndex);
+                console.log('** problemNo : ' + sentenceArray[problemIndex]);
+                problemIndex = 0;
+                getSentence(++sentenceIndex);
+            }
+            else {
+                console.log('*** sentenceIndex : ' + sentenceIndex);
+                console.log('*** problemIndex : ' + problemIndex);
+                console.log('*** problemNo : ' + sentenceArray[problemIndex]);
+                $.ajax({
+                    url: "../db/db_problem.php",
+                    type: "get",
+                    data: {
+                        "no": sentenceArray[problemIndex]
+                    }
+                }).done(function (data) {                    
+                    $('#result').html(data);
+                    myResize();
+                    resetObj();
+                });
+                showSentence(sentenceIndex);
+            }
+        }
+        // parameter로 들어온 sentenceIndex에 해당되는 문장 데이터를 sentencedata에 load
+        showSentence = (index) => {            
+            sentenceNodeIDArray = idValues[index].split(',');
+
+            $.ajax({
+                url: "../db/db_highlight.php",
+                type: "get",
+                data: {
+                    "sentence_id" : keys[index],
+                    "mark_id" : sentenceNodeIDArray[problemIndex]
+                }
+            })
+            .done(function (data) {                
+                console.log("sentence는 : " + data);
+                $('#sentencedata').html(data);
+            });
+        }
+
+        // 선택한 답안 데이터를 DB에 입력
+        insertChoices = (choiceArr) => {
+            $.ajax({
+                url: "../db/db_answer.php",
+                type: "post",
+                data: {
+                    "member_id": "<?php echo $varMemberID; ?>",
+                    "schedule_order": <?php echo $varSorder; ?>,
+                    "sentence_id": keys[sentenceIndex],
+                    "problem_id": sentenceArray[problemIndex],
+                    "node_id": sentenceNodeIDArray[problemIndex],
+                    "choice": choiceArr,
+                    "problem_index": problemIndex,
+                    "rounds": rounds,
+                    "duration": Min*60 + Sec
+                }
+            });
+        }
+
+
+        // 정답 확인 결과
+        clickChoices = (id, n) => {
+            problemAnswer = $('#Answer').val();
+            if(!noInsert) {
+                choiceNo.push(n);
+
+                $.ajax({
+                url: "../db/db_session_problem.php",
+                type: "post",
+                data: {
+                    "choice" : choiceNo
+                }
+            });
+
+            }
+            console.log(choiceNo);
+            //잘 모르겠음
+            if(n == 0) {
+                console.log(noInsert);
+                
+                $(`.CHOICES:not('#${id}-${problemAnswer},#choices-0')`).addClass("WRONG_CHOICES");
+                $(`.CHOICES:not('#${id}-${problemAnswer}')`).removeClass("CHOICES");
+                $('#' + id + '-' + n).addClass("DONTKNOW_CHOICES");                    
+                $('#' + id + '-' + problemAnswer).addClass("CORRECT_CHOICES");
+                $('#' + id + '-' + problemAnswer).removeClass("CHOICES");
+                var life = document.getElementsByClassName('WRONG_CHOICES');
+                
+                let choiceZero = choiceNo.join();
+                //정답 입력
+                insertChoices(choiceZero);
+
+                healthbar(life.length);
+                noInsert = true;
+                timeClear(); //시간 초기화
+                givetime(); //시간초기화
+            }
+            //정답일 경우               
+            else if(n == problemAnswer){
+                var wrong = document.getElementsByClassName('WRONG_CHOICES');                
+                givescore(wrong.length);
+                $('#' + id + '-' + n).addClass("CORRECT_CHOICES");
+                $('#' + id + '-' + n).removeClass("CHOICES");
+                $('.CHOICES').addClass("WRONG_CHOICES");
+                $('.WRONG_CHOICES').removeClass("CHOICES");
+                
+                let choiceArray = choiceNo.join();
+                //정답 입력
+                insertChoices(choiceArray);
+
+                //맞은경우
+                timeClear();
+                problemIndex++;
+                showresult(n,problemAnswer);
+                setTimeout(getNextProblem, 900);
+            }
+            //오답 3번째
+            else if(wrongCount == 2) {
+                $('#' + id + '-' + n).addClass("WRONG_CHOICES");
+                $('#choices-0').addClass("DONTKNOW_CHOICES");
+                $('.CHOICES:not("#choices-0, #choices-' + n + '")').addClass("CORRECT_CHOICES");
+                $('.CHOICES').removeClass("CHOICES");
+                var life = document.getElementsByClassName('WRONG_CHOICES');
+                healthbar(life.length);
+                noInsert = true;
+                showresult(n,problemAnswer);
+
+                let choiceArray = choiceNo.join();
+                //정답 입력
+                insertChoices(choiceArray);
+
+                timeClear();//시간초기화
+                givetime();//시간초기화
+            }   
+            //오답일 경우  
+            else if(n != problemAnswer){
+                $('#' + id + '-' + n).addClass("WRONG_CHOICES");
+                $('#' + id + '-' + n).removeClass("CHOICES");
+                var life = document.getElementsByClassName('WRONG_CHOICES');
+                healthbar(life.length);
+                showresult(n,problemAnswer);
+                wrongCount++;
+            }
+        }
+        //오답일 경우 HP 깎기
+        function healthbar(length) {
+            if (length < 3) {
+                var bar = document.getElementById('bar-'+length);
+                // $('#bar'+length).css("background", "ddd");
+                $(bar).addClass('HEALTHBAR_EFFECT');
+                setTimeout(function() {bar.style.backgroundColor = "#ddd";}, 250);
+                // bar.style.backgroundColor = "ddd";
+            }
+            else{
+                $('.bar').addClass("HEALTHBAR_EFFECT");
+                setTimeout(function() {$('.bar').css("background-color", "#ddd");}, 250);
+            }
+        }
+        //문제집 총 점수
+        function givescore(leftlife){
+            var life = 3;
+            point = life - leftlife;
+            point = Math.floor(point *100);
+            showscore(point);
+            const currentScore = $('#score').html();
+            newScore = parseInt(currentScore.match(/\d+/)) + point; //문자열 숫자로 변환
+            $('#score').html('MQ: ' + newScore); //계산한 숫자를 브라우저에 반환
+        }
+        //문제집 번호
+        function showQuestionNumber(){
+            var currentQuestion = $('#questionNumber').html();
+            var num = parseInt(currentQuestion.match(/\d+/)); //문자열 숫자로 변환
+            num++;
+            if (num <= 9) {
+                $('#questionNumber').html('0'+num);
+            }
+            else{
+                $('#questionNumber').html(num);
+            }
+            //  계산한 숫자를 브라우저에 반환
+        }
+
+        //현재 문제에서 받은 점수 보여주기 
+        function showscore(score) {
+            $('#givescore').html('+' + score);
+            $('#givescore').removeClass("hidden");
+            $('#givescore').addClass('givescore');
+        }
+        //문제 끝날때 마다 hp바 리셋, 점수 표시 제거
+        function resetObj() {
+            showQuestionNumber();
+            $('.bar').css("background-color", "red");
+            $('.bar').removeClass("HEALTHBAR_EFFECT")
+            $('#givescore').addClass("hidden");
+            $('#givescore').removeClass("givescore");
+            $('#timer').removeClass('TIMER');
+            $('#timer').removeClass('TIKTOK');
+            $('.MARKS').addClass('hidden');
+            setTimeout(function() {$('#timer').addClass('TIMER');}, 10);
+            setTimeout(function() {$('.TIMER').addClass('TIKTOK');}, 5000);
+        }
+        //5초 남았을때  타이머 깜빡이기
+        // setTimeout(function() {$('.TIMER').addClass('TIKTOK');}, 5000); 
+        //다음문제 넘어가는 시간
+        function givetime(){
+            problemIndex++;
+            //넘어가는 시간 -1 ex) 1= 2초 후 넘어감
+            var time = 1;
+            $('#nextDirection').html(time+1 +'초 뒤에 다음 페이지로 넘어갑니다.');
+            $('#nextDirection').removeClass("hidden");
+            var timer = setInterval(nextDirection, 1000);
+            
+            function nextDirection(){
+                if(time <= 0 ) {
+                    $('#nextDirection').addClass("hidden");
+                    clearInterval(timer);
+                    getNextProblem();
+                }
+                else{
+                    // $('#nextDirection').css("visibility", "visible");
+                    $('#nextDirection').html(time +'초 뒤에 다음 페이지로 넘어갑니다.');
+                    time--;
+                }
+            }
+        }
+        //정답 표시(O,X)
+        function showresult(choice,answer) {
+            var clientWidth = document.documentElement.clientWidth;
+            var clientHeight = document.documentElement.clientHeight;
+            if(choice == answer && clientHeight > clientWidth) {
+                if (choice == 1 ){
+                    setObj(correct, 0, -4.5, 20, 10, 10, clientWidth, clientHeight);
+                }
+                else if (choice == 2) {
+                    setObj(correct, 0, 3.5, 20, 10, 10, clientWidth, clientHeight);
+                }
+                else if (choice == 3) {
+                    setObj(correct, 0, 11.5, 20, 10, 10, clientWidth, clientHeight);
+                }
+                else {
+                    setObj(correct, 0, 19.5, 20, 10, 10, clientWidth, clientHeight);
+                }
+                $('#correct').removeClass('hidden');
+            }
+            else if (choice == answer && clientWidth > clientHeight) {
+                if (choice == 1){
+                    setObj(correct, -14, 3, 20, 20, 10, clientWidth, clientHeight);
+                }
+                else if (choice == 2) {
+                    setObj(correct, 14, 3, 20, 20, 10, clientWidth, clientHeight);
+                }
+                else if (choice == 3) {
+                    setObj(correct, -14, 14, 20, 20, 10, clientWidth, clientHeight);
+                }
+                else {
+                    setObj(correct, 14, 14, 20, 20, 10, clientWidth, clientHeight);
+                }
+                $('#correct').removeClass('hidden');
+            }
+            else {
+                if (choice == 1) {
+                    $('#wrong1').removeClass('hidden');
+                }
+                else if (choice == 2) {
+                    $('#wrong2').removeClass('hidden');
+                }
+                else if (choice == 3) {
+                    $('#wrong3').removeClass('hidden');
+                }
+                else if (choice == 4) {
+                    $('#wrong4').removeClass('hidden');
+                }
+            }
+        }
+
+
+
+    </script>
+
+    <body>
+    <!--시간-->
+    
+    <!--
+    <div id='time'>
+        <span id="postTestMin">00</span>
+        <span>:</span>
+        <span id="postTestSec">00</span>
+        <span>.</span>
+        <span id="postTestMilisec">00</span>
+    </div>
+    <div>
+    -->
+    <div>
+        세션 ID : <?= session_id() ?>
+    </div>
+    <div>
+        세션 내용 : <?=print_r($_SESSION) ?>
+    </div>
+
+    <!-- O, X -->
+    <div class="MARKS hidden" id="correct">
+        <img src="../image/correct.png" alt="O" width="100%" height="100%">
+    </div>
+    <div class="MARKS hidden" id="wrong1">
+        <img src="../image/wrong.png" alt="X" width="100%" height="100%">
+    </div>
+    <div class="MARKS hidden" id="wrong2">
+        <img src="../image/wrong.png" alt="X" width="100%" height="100%">
+    </div>
+    <div class="MARKS hidden" id="wrong3">
+        <img src="../image/wrong.png" alt="X" width="100%" height="100%">
+    </div>
+    <div class="MARKS hidden" id="wrong4">
+        <img src="../image/wrong.png" alt="X" width="100%" height="100%">
+    </div>
+    
+    <div class="NUMBER" id="questionNumber">
+        00
+    </div>
+    <div class="NUMBER" id="questionSize">
+        00
+    </div>
+
+    <!-- hp bar -->
+    <table class="HEALTHBAR" id="healthbar" data-total="100" data-value="100" cellspacing="2" cellpadding="0" border ="0">
+        <tr>
+            <td valign = "middle">
+                <table class="bar" id="bar-3">
+                </table>
+            </td>
+            <td>
+                <table class="bar" id="bar-2">
+                </table>
+            </td>
+            <td>
+                <table class="bar" id="bar-1">
+                </table>
+            </td>
+        </tr>
+    </table>
+    
+    <!-- 전체 점수-->
+    <table id="totalScore" class="SCORE">
+        <tr>
+            <td id ="score">
+                MQ: 0
+            </td>
+        </tr>   
+    </table>
+    <!-- 현재 점수-->
+    <table id="givescore" class="hidden">
+        <tr>
+            <td>
+            </td>
+        </tr>
+    </table>
+    <!-- 다음 문제로 넘어가기 위한 스탭 -->
+    <table id='nextDirection' class="hidden">
+        <tr>
+            <td> </td>
+        </tr>
+    </table>
+    <!-- 문제집 문장 -->
+    <table id="sentence" class="SENTENCE">
+        <tr>
+            <td id="sentencedata">
+            </td>
+        </tr>
+    </table>
+    <table id='goNext' class="NEXT hidden" onClick="goNext()">
+        <tr>
+            <td>
+                다음 문제 풀기
+            </td>
+        </tr>
+    </table>
+    <!-- 문제집에서 끌어오는 데이터 -->
+    <div id="result">
+    </body>
+    </div>
+    
+    <script>
+        //Object Declaration
+        var body = document.body;
+        
+        window.addEventListener('resize', function(event){ myResize(); });
+        window.addEventListener('load', function(event){ myResize(); });
+
+        setTimeout(myResize, 100);
+
+        function myResize() {
+            
+            //Object Declaration
+            //문제집
+            var sentence = document.getElementById('sentence');
+            var question = document.getElementById('question');
+            var choiceOne = document.getElementById('choices-1');
+            var choiceTwo = document.getElementById('choices-2');
+            var choiceThree = document.getElementById('choices-3');
+            var choiceFour = document.getElementById('choices-4');
+            var choiceFive = document.getElementById('choices-5');
+            var choiceZero = document.getElementById('choices-0');
+            // var countdown = document.getElementById('countdown');
+            //다음버튼
+            var next = document.getElementById('goNext');
+            var next2 = document.getElementById('nextDirection');
+            //목숨
+            var bar = document.getElementById('healthbar');
+            //시간 타이머
+            var timer = document.getElementById('timer');
+            //O, X
+            var wrong1 = document.getElementById('wrong1');
+            var wrong2 = document.getElementById('wrong2');
+            var wrong3 = document.getElementById('wrong3');
+            var wrong4 = document.getElementById('wrong4');
+            var correct = document.getElementById('correct');
+            //총 점수
+            var totalScore = document.getElementById('totalScore');
+            //현재 받을 수 있는 점수
+            var giveScore = document.getElementById('givescore');
+            //현재 문제 번호
+            var number = document.getElementById('questionNumber');
+            //총 문제 갯수
+            var size = document.getElementById('questionSize');
+            //타이머
+            var time = document.getElementById('time');
+            //Coordinate Declaration
+            var clientWidth = document.documentElement.clientWidth;
+            var clientHeight = document.documentElement.clientHeight;
+
+            // console.log('width: ' + clientWidth + ', height: ' + clientHeight);
+
+            // 모바일아닐경우
+            if(clientWidth > clientHeight) {
+                setObj(sentence, 0, -20, 53, 8, 3, clientWidth, clientHeight);
+                setObj(question, 0, -9, 53, 10, 2.8, clientWidth, clientHeight);
+                setObj(choiceOne, -14, 2, 25, 8, 2, clientWidth, clientHeight);
+                setObj(choiceTwo, 14, 2, 25, 8, 2, clientWidth, clientHeight);
+                setObj(choiceThree, -14, 13, 25, 8, 2, clientWidth,clientHeight);
+                setObj(choiceFour, 14, 13, 25, 8, 2, clientWidth,clientHeight);
+                // setObj(choiceFive, -14, 21, 25, 8, 1, clientWidth,clientHeight);
+                setObj(choiceZero, 0, 24, 53, 8, 2, clientWidth,clientHeight);
+                // setObj(countdown, 30,  -30, 20, 10, 2, clientWidth, clientHeight);
+                // setObj(next, 40, 24, 10, 8, 2, clientWidth, clientHeight);
+                setObj(next2, 0, 33, 20, 5, 2, clientWidth, clientHeight);
+                setObj(bar, -21.6, -29.5, 10, 2.5, 2, clientWidth, clientHeight);
+                setObj(wrong1, -14, 1.5, 13, 13, 1, clientWidth, clientHeight);
+                setObj(wrong2, 14, 1.5, 13, 13, 1, clientWidth, clientHeight);
+                setObj(wrong3, -14, 12.5, 13, 13, 1, clientWidth, clientHeight);
+                setObj(wrong4, 14, 12.5, 13, 13, 1, clientWidth, clientHeight);
+                setObj(totalScore, -11.6, -33, 30, 5, 3.5, clientWidth, clientHeight);
+                setObj(giveScore, -11.6, -33.5, 10, 8, 9, clientWidth, clientHeight);
+                setObj(number, 0,  -35, 10, 8, 10, clientWidth, clientHeight);
+                setObj(size, 0, -43, 10, 8, 3, clientWidth, clientHeight);
+                check(clientWidth, clientHeight);
+                
+            }
+            //모바일
+            else {
+                setObj(sentence, 0, -20, 70, 5, 3 , clientWidth, clientHeight);
+                setObj(question, 0, -13, 80, 5, 3, clientWidth, clientHeight);
+                setObj(choiceOne, 0, -5, 80, 5, 2.5, clientWidth, clientHeight);
+                setObj(choiceTwo, 0, 3, 80, 5, 2.5, clientWidth, clientHeight);
+                setObj(choiceThree, 0, 11, 80, 5, 2.5, clientWidth,clientHeight);
+                setObj(choiceFour, 0, 19, 80, 5, 2.5, clientWidth,clientHeight);
+                // setObj(choiceFive, 0, 29, 80, 5, 2.5, clientWidth,clientHeight);
+                setObj(choiceZero, 0, 27, 80, 5, 2.5, clientWidth,clientHeight);
+                // setObj(next, 0, 45, 13, 5, 2, clientWidth, clientHeight);
+                setObj(next2, 0, 33, 50, 5, 3, clientWidth, clientHeight);
+                setObj(bar, -30, -26, 20, 2.5, 2, clientWidth, clientHeight);
+                setObj(wrong1, 0, -5, 9, 9, 1, clientWidth, clientHeight);
+                setObj(wrong2, 0, 3, 9, 9, 1, clientWidth, clientHeight);
+                setObj(wrong3, 0, 11, 9, 9, 1, clientWidth, clientHeight);
+                setObj(wrong4, 0, 19, 9, 9, 1, clientWidth, clientHeight);
+                setObj(totalScore, -33, -29, 15, 10, 3, clientWidth, clientHeight);
+                setObj(giveScore, -15, -26, 10, 8, 9, clientWidth, clientHeight);
+                setObj(number, 0,  -35, 10, 8, 10, clientWidth, clientHeight);
+                setObj(size, 0, -43, 10, 8, 3, clientWidth, clientHeight);
+                check(clientWidth, clientHeight);
+            }
+            
+        }
+
+        // layout 안바꾸고 폰트만
+        function check(clientWidth, clientHeight) {
+            var choiceOne = document.getElementById('choices-1');
+            var choiceTwo = document.getElementById('choices-2');
+            var choiceThree = document.getElementById('choices-3');
+            var choiceFour = document.getElementById('choices-4');
+
+            var actual_h1 = Math.floor(choiceOne.offsetHeight);
+            var actual_h2 = Math.floor(choiceTwo.offsetHeight);
+            var actual_h3 = Math.floor(choiceThree.offsetHeight);
+            var actual_h4 = Math.floor(choiceFour.offsetHeight);
+
+            if (clientWidth < clientHeight) {
+                var desired_h = Math.floor(getObjSize(5, clientHeight));
+
+                if (actual_h1 > desired_h) {
+                    setObj(choiceOne,0, -5, 80, 5, 2.5 *  desired_h/actual_h1, clientWidth, clientHeight);
+                }
+                else if (actual_h2 > desired_h) {
+                    setObj(choiceTwo, 0, 3, 80, 5, 2.5 * desired_h/actual_h2, clientWidth, clientHeight);
+                }
+                else if (actual_h3 > desired_h) {
+                    setObj(choiceThree, 0, 11, 80, 5, 2.5 * desired_h/actual_h3, clientWidth, clientHeight);
+                }
+                else if (actual_h4 > desired_h) {
+                    setObj(choiceFour, 0, 18, 80, 5, 2.5 * desired_h/actual_h4, clientWidth, clientHeight);
+                }
+                body.style.visibility = "visible";
+            }
+            else {
+                var desired_h = Math.floor(getObjSize(8, clientHeight));
+                if (actual_h1 > desired_h) {
+                    setObj(choiceOne,-14, 2, 25, 8, 2 *  desired_h/actual_h1, clientWidth, clientHeight);
+                }
+                else if (actual_h2 > desired_h) {
+                    setObj(choiceTwo, -14, 2, 25, 8, 2 * desired_h/actual_h2, clientWidth, clientHeight);
+                }
+                else if (actual_h3 > desired_h) {
+                    setObj(choiceThree, -14, 13, 25, 8, 2 * desired_h/actual_h3, clientWidth, clientHeight);
+                }
+                else if (actual_h4 > desired_h) {
+                    setObj(choiceFour, -14, 13, 25, 8, 2 * desired_h/actual_h4, clientWidth, clientHeight);
+                }
+                body.style.visibility = "visible";
+            }
+        }
+
+    </script>
+</html>
