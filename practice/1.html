@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ko" class="">
+<head>
+    <meta charset="UTF-8">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <title>CodePen Demo</title>
+</head>
+<body>
+    <select onchange = "categoryChange(this)">
+        <option>--선택--</option>
+        <option value = "a">a</option>
+        <option value = "b">b</option>
+        <option value = "c">c</option>
+    </select>
+    <div id = "good">
+
+    </div>
+</body>
+ <script>
+    function categoryChange(e){
+        var good_a = ["ㅁ","ㅁ","ㅁ","ㅁ"];
+        var good_b = ["ㅇ","ㅇ","ㅇ"];
+        var good_c = ["ㅊ","ㅊ","ㅊ","ㅊ","ㅊ"];
+        var target = document.getElementById("good");
+
+        if(e.value == "a") var d = good_a;
+        else if (e.value == "b") var d = good_b;
+        else if (e.value == "c") var d = good_c;
+        
+        target.options.length = 0;
+        var opt = document.createElement("select");
+        taget.appendChild(opt);
+      
+    }
+
+    function creatSelectBox(id,name,listData){
+        var select = document.createElement('select');
+        select.id = id;
+        select.name = name;
+
+        var option = documnet.createElement("option");
+        option.value = "all";
+        option.text = "--선택--";
+        select.appendChild(option);
+
+        return select;
+    }
+
+    function createSelectBoxAndOptions(selectId, listData){
+        var select = document.getElemetById(selectId);
+        for(var i in listData){
+            var option = document.createElemnt("option");
+            option.value = listData[i].value;
+            option.text = listData[i].text;
+            select.appendChild(option);
+        }
+    }
+</script>
+
+</html>

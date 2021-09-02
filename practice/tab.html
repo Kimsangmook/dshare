@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ko" class="">
+  <head>
+    <meta charset="UTF-8">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <title>CodePen Demo</title>
+  </head>
+  <body>
+    <div class="walterModel">
+        <a tabindex=1>link</a>    
+         <a tabindex=2>link</a>    
+         <a tabindex=3>link</a>    
+         <a tabindex=4>link</a>    
+         <a tabindex=5>link</a>    
+         <a tabindex=6>link</a>    
+         <a tabindex=7>link</a>    
+         <a tabindex=8>link</a>    
+         <a tabindex=9>link</a>    
+         <a tabindex=10>link</a>   
+    </div>
+</body>
+ <script>
+    $(document).ready(function() {
+            lastIndex = 0;
+            $(document).keydown(function(e) {
+                if (e.keyCode == 9) {
+                    var thisTab = $(":focus").attr("tabindex");
+                    console.log(thisTab);
+                }
+                if (e.keyCode == 9) {
+                    if (e.shiftKey) {
+                        //Focus previous input
+                        if (thisTab == startIndex) {
+                            console.log("처음일때");
+                            $("." + tabID).find('[tabindex=' + lastIndex + ']').focus();
+                            return false;
+                        }
+                    } else {
+                        if (thisTab == lastIndex) {
+                            console.log("마지막일때");
+                            $("." + tabID).find('[tabindex=' + startIndex + ']').focus();
+                            return false;
+                        }
+                    }
+                }
+            });
+            var setTabindexLimit = function(x, thisID) {
+                console.log("테이블 제한",x);
+                startIndex = 1;
+                lastIndex = x;
+                tabID = thisID;
+                $("." + tabID).find('[tabindex=' + startIndex + ']').focus();
+            }
+            /*Taking last tabindex=10 */
+            setTabindexLimit(10, "walterModel");
+        });
+</script>
+
+</html>
