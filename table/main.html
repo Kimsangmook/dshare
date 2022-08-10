@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Practice</title>
+    <link href="./style.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+    <table class=armyGroup id =armyGroup>
+        <thead>
+            <tr>
+                <th colspan="2">9군</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>발터 모델</td>
+                <td>한스 크랩스</td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+<script type="javascript/txt" src="./script.js"></script>
+<script>
+    function findChild(id){
+        let myThis = document.getElementById(id);
+        console.log(myThis);
+        console.log(myThis.children);
+    }
+    childlist = []
+    findChild("armyGroup");
+</script>
+</html>

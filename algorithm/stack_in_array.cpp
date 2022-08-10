@@ -2,6 +2,7 @@
 #define SIZE 10
 #define FALSE 0
 #define TRUE 1 
+using namespace std;
 
 typedef int Data;
 

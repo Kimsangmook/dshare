@@ -1,60 +1,172 @@
-<!DOCTYPE html>
-<html lang="ko" class="">
+<!doctype html>
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-    <title>CodePen Demo</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>jQuery UI Sortable - Handle empty lists</title>
+  <link rel="stylesheet" href="//code.jquery.com/ui/1.13.1/themes/base/jquery-ui.css">
+  <style>
+  #sortable1 { list-style-type: none; margin: 0; margin-right: 10px; background: #eee; padding: 5px; width: 750px; height: 100px;}
+  #sortable3 { list-style-type: none; margin: 0; margin-right: 10px; background: red; padding: 5px; width: 750x; height: 100px;}
+  #sortable1 li, #sortable2 li, #sortable3 li { margin: 5px; padding: 5px; font-size: 1.2em; width: 120px; float: left;}
+  </style>
+  <script src="https://code.jquery.com/jquery-3.6.0.js"></script>
+  <script src="https://code.jquery.com/ui/1.13.1/jquery-ui.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui-touch-punch/0.2.3/jquery.ui.touch-punch.min.js"></script>
+  <!-- <script src="./jquery.doubletap.js"></script> -->
+
+  <!-- <script src="http://code.jquery.com/jquery.min.js"></script> -->
+  <!-- <script src="http://code.jquery.com/ui/1.8.17/jquery-ui.min.js"></script> -->
+  <!-- <script src="jquery.ui.touch-punch.min.js"></script> -->
+  <script>
+
+        // let bStartEvent = false; //touchstart 이벤트 발생 여부 플래그  
+        // let bMoveEvent = false; //touchmove 이벤트 발생 여부 플래그  
+        // let htClickInfo = { //더블탭을 판단하기 위한 마지막 탭 이벤트의 정보 해시 테이블  
+        //     sType : null,
+        //     /** 거리로 제어할 때
+        //     nX : -1,
+        //     nY : -1,
+        //     */
+        //     nTime : 0,
+        //     eTarget : null,
+        //     eTargetParentId : null
+        // }
+
+        // let nDoubleTapDuration = 600; //더블탭을 판단하는 기준 시간(ms)  
+        // // let nTapThreshold = 5; //탭을 판단하는 거리 거리로 제어할 때
+
+        // function initClearInfo() {  
+        //     htClickInfo.sType = null;
+        //     htClickInfo.eTarget = null;
+        //     htClickInfo.eTargetParentId = null;
+        // }
+
+        // function onStart(e) {  
+        //     bStartEvent = true;
+        // }
+
+        // function onMove(e) { 
+        //     if(!bStartEvent) {
+        //         return; //touchstart 이벤트가 발생하지 않으면 처리하지 않는다.
+        //     }
+        //     bMoveEvent = true; //touchmove 이벤트 발생 여부를 설정한다.
+        // }
+
+
+        // function onEnd(e) {
+        //     // let nX = e.changedTouches[0].pageX;
+        //     // let nY = e.changedTouches[0].pageY;
+        //     let nTime = e.timeStamp;
+        //     if(bStartEvent && !bMoveEvent) {
+        //         //이전 탭 이벤트와 시간 차이가 1000ms 이하일 경우
+        //         if(htClickInfo.sType == 'click' && (nTime-htClickInfo.nTime) <= nDoubleTapDuration)
+        //         {
+        //             // if( (Math.abs(htClickInfo.nX-nX) <= nTapThreshold) && (Math.abs(htClickInfo.nY-nY) <= nTapThreshold) ){ // 거리로 제어할 때
+        //             if(e.target == htClickInfo.eTarget && e.target.parentNode.id == htClickInfo.eTargetParentId ){
+        //                 //더블탭으로 판단한다.
+        //                 let classNameArr = e.target.className.split(" ");
+        //                 if(classNameArr.indexOf("ui-state-default")>-1 && e.target.parentNode.id=="sortable3"){
+        //                     document.getElementById("sortable1").appendChild(e.target);
+        //                 }else{
+        //                     document.getElementById("sortable3").appendChild(e.target);
+        //                 }
+        //             }
+
+        //         }else{
+        //             //탭 이벤트로 판단한다.
+        //             //현재 탭 이벤트들에 대한 정보를 업데이트한다.
+        //             htClickInfo.sType = 'click';
+        //             /** 거리로 제어할 때
+        //              htClickInfo.nX = nX;
+        //                 htClickInfo.nY =nY;
+        //             */
+        //             htClickInfo.nTime = nTime;
+        //             htClickInfo.eTarget=e.target;
+        //             htClickInfo.eTargetParentId = e.target.parentNode.id;
+        //         }   
+        //     } else {
+        //         //탭 이벤트가 아니므로 탭 이벤트 정보를 초기화한다.
+        //         initClearInfo();
+        //     }
+
+        //     //각 플래그 값을 초기값으로 세팅한다.
+        //     bStartEvent = false;
+        //     bMoveEvent = false; 
+        // }
+
+  $( function() {
+    $( "ul.droptrue" ).sortable({
+        items:$(".ui-state-default"),
+        connectWith: "ul",
+        start: function(event,ui){
+        },
+        stop: function(event,ui){
+        }
+    });
+
+    // $("ul.droptrue").dblclick(function(e) {
+    //     let classNameArr = e.target.className.split(" ");
+    //     console.log(e.target.id);
+    //     console.log(classNameArr);
+    //     if(e.target.id=="sortable1"||e.target.id=="sortable3"){    
+    //     }else{
+    //         if(classNameArr.indexOf("ui-state-default")>-1 && e.target.parentNode.id=="sortable3"){
+    //             document.getElementById("sortable1").appendChild(e.target);
+    //         }else{
+    //             document.getElementById("sortable3").appendChild(e.target);
+    //         }
+
+    //     }
+    // });
+
+    // $("ul.droptrue").bind('touchstart', function(e){
+    //     onStart(e);
+    //     onEnd(e);
+    // });
+
+    // $("ul.droptrue").bind('touchmove', function(e){
+    //     onMove(e);
+    // });
+
+
+
+    // $( "ul.dropfalse" ).sortable({
+    //   connectWith: "ul",
+    //   dropOnEmpty: false
+    // });
+ 
+    $( "#sortable1, #sortable3" ).disableSelection();
+
+
+  } );
+  
+
+  </script>
 </head>
 <body>
-    <select onchange = "categoryChange(this)">
-        <option>--선택--</option>
-        <option value = "a">a</option>
-        <option value = "b">b</option>
-        <option value = "c">c</option>
-    </select>
-    <div id = "good">
+ 
+<ul id="sortable1" class="droptrue" >
+</ul>
+ 
+ 
+<ul id="sortable3" class="droptrue">
+    <li class="ui-state-default">to live</li>
+    <li class="ui-state-default">
+      be
+    </li>
+    <li class="ui-state-default">to suffer</li>
+    <li class="ui-state-default">to survive</li>
+    <li class="ui-state-default">be</li>
+    <li class="ui-state-default">to find</li>
+    <li class="ui-state-default">some</li>
+    <li class="ui-state-default">meaning</li>
+    <li class="ui-state-default">in</li>
+    <li class="ui-state-default">the</li>
+    <li class="ui-state-default">suffering</li>
+</ul>
+ 
 
-    </div>
+ 
 </body>
- <script>
-    function categoryChange(e){
-        var good_a = ["ㅁ","ㅁ","ㅁ","ㅁ"];
-        var good_b = ["ㅇ","ㅇ","ㅇ"];
-        var good_c = ["ㅊ","ㅊ","ㅊ","ㅊ","ㅊ"];
-        var target = document.getElementById("good");
-
-        if(e.value == "a") var d = good_a;
-        else if (e.value == "b") var d = good_b;
-        else if (e.value == "c") var d = good_c;
-        
-        target.options.length = 0;
-        var opt = document.createElement("select");
-        taget.appendChild(opt);
-      
-    }
-
-    function creatSelectBox(id,name,listData){
-        var select = document.createElement('select');
-        select.id = id;
-        select.name = name;
-
-        var option = documnet.createElement("option");
-        option.value = "all";
-        option.text = "--선택--";
-        select.appendChild(option);
-
-        return select;
-    }
-
-    function createSelectBoxAndOptions(selectId, listData){
-        var select = document.getElemetById(selectId);
-        for(var i in listData){
-            var option = document.createElemnt("option");
-            option.value = listData[i].value;
-            option.text = listData[i].text;
-            select.appendChild(option);
-        }
-    }
-</script>
-
 </html>
